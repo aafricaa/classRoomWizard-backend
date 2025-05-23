@@ -35,7 +35,11 @@ const loginUsuario = (req, res) => {
 
   const query = 'SELECT * FROM profesor WHERE correo = ?';
   db.query(query, [correo], (err, results) => {
-    if (err) return res.status(500).json({ mensaje: 'Error en el servidor' });
+    if (err) {
+  console.error("Error en la query de login:", err); // 👈 esto te lo revelará
+  return res.status(500).json({ mensaje: 'Error en el servidor' });
+}
+
 
     if (results.length === 0) {
       return res.status(404).json({ mensaje: 'Correo no encontrado' });
