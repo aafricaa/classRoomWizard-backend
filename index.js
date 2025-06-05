@@ -16,50 +16,61 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Logs de arranque
 console.log("Inicializando servidor...");
 console.log("Conectando a la base de datos...");
 
-async function iniciarServidor() {
+async function intentarConexion(reintentos = 0) {
   try {
     const connection = await db.getConnection();
-    connection.release(); // Liberamos la conexión al pool
+    connection.release();
     console.log("✅ Conexión exitosa a la BD");
-
-    // Rutas
-    app.get("/", (req, res) => res.send("✅ API funcionando correctamente"));
-    app.get("/ping", (req, res) => res.send("pong"));
-
-    app.use("/clases", claseRoutes);
-    app.use("/alumnos", alumnoRoutes);
-    app.use("/auth", authRoutes);
-    app.use("/condiciones", condicionRoutes);
-    app.use("/mesas", mesasRoutes);
-
-    // Middleware para errores no controlados en rutas
-    app.use((err, req, res, next) => {
-      console.error("❗ Error inesperado:", err);
-      res.status(500).json({ error: "Error interno del servidor" });
-    });
-
-    // Captura de errores globales
-    process.on("uncaughtException", (err) => {
-      console.error("💥 Excepción no controlada:", err);
-    });
-
-    process.on("unhandledRejection", (reason, promise) => {
-      console.error("💥 Promesa rechazada no manejada:", reason);
-    });
-
-    // Iniciar el servidor
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-    });
-
+    return true;
   } catch (err) {
-    console.error("❌ Error al conectar con la base de datos:", err.message);
+    console.error(`❌ Fallo de conexión (${reintentos + 1}/10): ${err.message}`);
+    if (reintentos < 9) {
+      await new Promise((res) => setTimeout(res, 5000)); // espera 5 segundos
+      return intentarConexion(reintentos + 1);
+    } else {
+      return false;
+    }
+  }
+}
+
+async function iniciarServidor() {
+  const conectado = await intentarConexion();
+  if (!conectado) {
+    console.error("🚫 No se pudo conectar con la base de datos tras varios intentos.");
     process.exit(1);
   }
+
+  // Rutas
+  app.get("/", (req, res) => res.send("✅ API funcionando correctamente"));
+  app.get("/ping", (req, res) => res.send("pong"));
+
+  app.use("/clases", claseRoutes);
+  app.use("/alumnos", alumnoRoutes);
+  app.use("/auth", authRoutes);
+  app.use("/condiciones", condicionRoutes);
+  app.use("/mesas", mesasRoutes);
+
+  // Middleware de errores
+  app.use((err, req, res, next) => {
+    console.error("❗ Error inesperado:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  });
+
+  process.on("uncaughtException", (err) => {
+    console.error("💥 Excepción no controlada:", err);
+  });
+
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("💥 Promesa rechazada no manejada:", reason);
+  });
+
+  // Arrancar servidor
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  });
 }
 
 iniciarServidor();
