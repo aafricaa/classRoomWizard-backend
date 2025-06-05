@@ -70,6 +70,16 @@ async function iniciarServidor() {
   // Arrancar servidor
   app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+
+    // 🔁 Evita que la base de datos se duerma haciendo un ping cada 4 minutos
+    setInterval(async () => {
+      try {
+        await db.query("SELECT 1");
+        console.log("🟢 Ping automático enviado a la base de datos");
+      } catch (err) {
+        console.error("🔴 Error en el ping automático:", err.message);
+      }
+    }, 1000 * 60 * 4); // Cada 4 minutos
   });
 }
 
