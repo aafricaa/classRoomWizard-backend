@@ -1,27 +1,36 @@
-const mysql = require("mysql2/promise");
+const mysql = require("mysql2");
 require("dotenv").config();
 
-// Crear pool de conexiones
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000,
-  connectTimeout: 10000,
-});
+let db;
 
-pool.getConnection()
-  .then(() => {
-    console.log("✅ Conexión exitosa a la BD");
-  })
-  .catch((err) => {
-    console.error("❌ Error al conectar con la BD:", err.message);
+function connectDB() {
+  db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
   });
 
-module.exports = pool;
+  db.connect((err) => {
+    if (err) {
+      console.error("❌ Error al conectar con la BD:", err.message);
+      setTimeout(connectDB, 5000); // Reintentar en 5 segundos
+    } else {
+      console.log("✅ Conexión exitosa a la BD");
+    }
+  });
 
+  // Si se pierde la conexión, se reconecta automáticamente
+  db.on("error", (err) => {
+    console.error("⚠️ Error de conexión:", err.code);
+    if (err.code === "PROTOCOL_CONNECTION_LOST") {
+      connectDB(); // Reintenta la conexión
+    } else {
+      throw err;
+    }
+  });
+}
+
+connectDB();
+
+module.exports = db;
