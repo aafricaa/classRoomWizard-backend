@@ -290,12 +290,26 @@ for (const id of idsAlumnos) {
       if (combinacionesValidas.length > 0) {
         let seleccion = null;
 
+        // Si hay fila preferida, filtrar combinaciones que la cumplan
         if (filaPreferida) {
-          seleccion = combinacionesValidas.find(pair => pair.m1.fila === filaPreferida);
+          const filtradas = combinacionesValidas.filter(pair => pair.m1.fila === filaPreferida);
+          if (filtradas.length > 0) {
+            // Elegir la combinación más lejana dentro de las que cumplen la fila
+            seleccion = filtradas.reduce((másLejana, actual) => {
+              const distActual = Math.abs(actual.m1.fila - actual.m2.fila) + Math.abs(actual.m1.columna - actual.m2.columna);
+              const distMejor = Math.abs(másLejana.m1.fila - másLejana.m2.fila) + Math.abs(másLejana.m1.columna - másLejana.m2.columna);
+              return distActual > distMejor ? actual : másLejana;
+            });
+          }
         }
 
         if (!seleccion) {
-          seleccion = combinacionesValidas[0]; // tomar la primera válida
+          // Elegir la combinación más lejana entre todas
+          seleccion = combinacionesValidas.reduce((másLejana, actual) => {
+            const distActual = Math.abs(actual.m1.fila - actual.m2.fila) + Math.abs(actual.m1.columna - actual.m2.columna);
+            const distMejor = Math.abs(másLejana.m1.fila - másLejana.m2.fila) + Math.abs(másLejana.m1.columna - másLejana.m2.columna);
+            return distActual > distMejor ? actual : másLejana;
+          });
         }
 
         if (seleccion) {
