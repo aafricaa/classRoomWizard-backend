@@ -192,8 +192,6 @@ res.status(201).json(clase[0]);
     res.status(500).json({ error: "Error al crear la clase personalizada" });
   }
 };
-
-
 // Lógica corregida para aplicar condiciones con prioridad:
 exports.asignarAlumnos = async (req, res) => {
   const idClase = parseInt(req.params.idClase);
